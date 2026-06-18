@@ -1,0 +1,1936 @@
+<!-- Mastrela Reciclagem System -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mastrela">
+<title>Mastrela Reciclagem</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f4; color: #1c1c1b; min-height: 100vh; }
+.screen { display: none; padding: 1rem; max-width: 480px; margin: 0 auto; padding-bottom: 2rem; }
+.screen.active { display: block; }
+.header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e5e3; }
+.header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+.back { font-size: 26px; cursor: pointer; color: #888; line-height: 1; padding: 0 4px; }
+.logo-area { text-align: center; padding: 2rem 0 1rem; }
+.logo-area .icon { font-size: 48px; display: block; margin-bottom: 8px; }
+.logo-area h2 { font-size: 22px; font-weight: 700; }
+.logo-area p { font-size: 13px; color: #888; margin-top: 4px; }
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.5rem; }
+.mode-card { background: #fff; border: 1px solid #e5e5e3; border-radius: 16px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+.mode-card:active { transform: scale(0.97); }
+.mode-card .icon { font-size: 30px; display: block; margin-bottom: 8px; }
+.mode-card .label { font-size: 14px; font-weight: 600; }
+.mode-card .sub { font-size: 11px; color: #888; margin-top: 3px; }
+.mode-card.locked .icon::after { content: ' 🔒'; font-size: 14px; }
+label { font-size: 13px; color: #666; display: block; margin-bottom: 6px; font-weight: 500; }
+select, input[type=text], input[type=number], input[type=password] {
+  width: 100%; padding: 11px 12px; border: 1px solid #ddd; border-radius: 10px;
+  font-size: 15px; background: #fff; color: #1c1c1b; margin-bottom: 14px;
+  -webkit-appearance: none; appearance: none; outline: none;
+}
+select:focus, input:focus { border-color: #185FA5; }
+.btn { width: 100%; padding: 13px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; margin-top: 4px; -webkit-tap-highlight-color: transparent; transition: opacity 0.15s; }
+.btn:active { opacity: 0.8; }
+.btn-primary { background: #185FA5; color: #fff; }
+.btn-success { background: #0F6E56; color: #fff; }
+.btn-danger { background: #c0392b; color: #fff; }
+.btn-secondary { background: #fff; color: #1c1c1b; border: 1px solid #ddd; }
+.btn-warning { background: #d97706; color: #fff; }
+.btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 8px; width: auto; margin: 0; }
+.ticket-box { background: #e8f0fb; border-radius: 16px; padding: 1.5rem; margin: 1rem 0; text-align: center; }
+.ticket-num { font-size: 56px; font-weight: 700; color: #185FA5; line-height: 1; letter-spacing: -2px; }
+.ticket-label { font-size: 13px; color: #555; margin-top: 6px; }
+.card { background: #fff; border: 1px solid #e5e5e3; border-radius: 14px; padding: 1.25rem; margin-bottom: 10px; }
+.item-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f0f0ee; font-size: 14px; }
+.item-row:last-child { border-bottom: none; }
+.item-name { font-weight: 600; }
+.item-detail { font-size: 12px; color: #888; margin-top: 2px; }
+.total-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 0; border-top: 1px solid #e5e5e3; margin-top: 4px; }
+.total-label { font-size: 15px; font-weight: 600; }
+.total-value { font-size: 22px; font-weight: 700; color: #0F6E56; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+.badge-aberto { background: #dbeafe; color: #1e40af; }
+.badge-pago { background: #dcfce7; color: #166534; }
+.badge-cancelado { background: #fee2e2; color: #991b1b; }
+.fila-card { background: #fff; border: 1.5px solid #e5e5e3; border-radius: 16px; padding: 1rem 1.1rem; margin-bottom: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: box-shadow 0.15s, border-color 0.15s; }
+.fila-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.fila-card.selected { border-color: #185FA5; background: #f0f6ff; box-shadow: 0 2px 12px rgba(24,95,165,0.12); }
+.fila-card.pago { border-color: #0F6E56; background: #f0faf6; cursor: default; }
+.fila-header { display: flex; justify-content: space-between; align-items: center; }
+.fila-nome { font-size: 16px; font-weight: 700; }
+.fila-resumo { font-size: 13px; color: #888; margin-top: 3px; }
+.fila-total { font-size: 16px; font-weight: 700; color: #0F6E56; margin-top: 4px; }
+.fila-numero { font-size: 12px; background: #f0f0ee; color: #888; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.tabs { display: flex; gap: 6px; margin-bottom: 1rem; }
+.tab { flex: 1; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #888; }
+.tab.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.added-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; background: #f5f5f4; border-radius: 10px; margin-bottom: 8px; font-size: 14px; }
+.remove-btn { background: none; border: none; cursor: pointer; color: #c0392b; font-size: 22px; line-height: 1; padding: 0 4px; }
+.subtotal-bar { display: flex; justify-content: space-between; padding: 10px 0; font-size: 15px; font-weight: 600; border-top: 1px solid #e5e5e3; margin: 4px 0 14px; }
+.subtotal-bar span:last-child { color: #0F6E56; }
+.empty { text-align: center; padding: 2.5rem 1rem; color: #888; font-size: 14px; }
+.loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1c1c1b; color: #fff; padding: 11px 22px; border-radius: 12px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.preco-group { background: #f5f5f4; border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.preco-group-label { font-size: 12px; color: #888; font-weight: 600; margin-bottom: 8px; }
+.preco-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.preco-row:last-child { margin-bottom: 0; }
+.preco-row label { margin: 0; font-size: 13px; flex: 1; }
+.preco-row input { margin: 0; width: 100px; flex-shrink: 0; padding: 7px 10px; font-size: 14px; }
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.periodo-btns { display: flex; gap: 6px; margin-bottom: 1rem; }
+.periodo-btn { flex: 1; padding: 8px 4px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #888; }
+.periodo-btn.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.rel-resumo { background: #0F6E56; color: #fff; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; }
+.rel-resumo-label { font-size: 13px; opacity: 0.8; }
+.rel-resumo-valor { font-size: 36px; font-weight: 700; margin-top: 4px; }
+.rel-resumo-sub { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+.mat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0ee; }
+.mat-row:last-child { border-bottom: none; }
+.mat-nome { font-size: 14px; font-weight: 500; }
+.mat-detalhe { font-size: 12px; color: #888; margin-top: 2px; }
+.mat-valor { font-size: 15px; font-weight: 700; color: #0F6E56; margin-left: 12px; }
+.bar-bg { background: #f0f0ee; border-radius: 4px; height: 4px; margin-top: 4px; }
+.bar-fill { background: #0F6E56; border-radius: 4px; height: 4px; }
+.fp-btn { padding: 10px 6px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #888; -webkit-tap-highlight-color: transparent; }
+.fp-btn.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.rota-card { background: #fff; border: 1.5px solid #e5e5e3; border-radius: 14px; padding: 1rem; margin-bottom: 10px; }
+.rota-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.rota-nome { font-size: 15px; font-weight: 700; }
+.rota-detalhe { font-size: 12px; color: #888; margin-top: 2px; }
+.rota-total { font-size: 15px; font-weight: 700; color: #d97706; }
+.login-screen { display:none; position:fixed; inset:0; background:#f5f5f4; z-index:200; align-items:center; justify-content:center; flex-direction:column; padding:2rem; }
+.login-screen.show { display:flex; }
+.login-logo { text-align:center; margin-bottom:2rem; }
+.login-logo .icon { font-size:52px; display:block; margin-bottom:8px; }
+.login-logo h2 { font-size:22px; font-weight:700; }
+.login-logo p { font-size:13px; color:#888; margin-top:4px; }
+.user-btn { width:100%; max-width:340px; background:#fff; border:1px solid #e5e5e3; border-radius:16px; padding:1.25rem; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; margin-bottom:12px; -webkit-tap-highlight-color:transparent; transition:transform 0.1s; }
+.user-btn:active { transform:scale(0.98); }
+.user-avatar { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; flex-shrink:0; }
+.user-info-name { font-size:16px; font-weight:600; color:#1c1c1b; }
+.user-info-role { font-size:12px; color:#888; margin-top:2px; }
+.login-modal { background:#fff; border-radius:20px; padding:1.5rem; width:90%; max-width:340px; }
+.login-modal h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.login-modal p { font-size:13px; color:#888; margin-bottom:16px; }
+.login-error { color:#c0392b; font-size:13px; margin-top:-8px; margin-bottom:10px; display:none; }
+.cliente-card { background: #fff; border: 1px solid #e5e5e3; border-radius: 14px; padding: 1rem; margin-bottom: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cliente-card:active { transform: scale(0.98); }
+.cliente-nome { font-size: 16px; font-weight: 600; }
+.cliente-info { font-size: 13px; color: #888; margin-top: 3px; }
+.cliente-stats { display: flex; gap: 12px; margin-top: 8px; }
+.cliente-stat { font-size: 12px; color: #555; background: #f5f5f4; padding: 4px 8px; border-radius: 8px; }
+.search-input-wrap { position: relative; margin-bottom: 1rem; }
+.search-input-wrap input { padding-left: 36px; margin: 0; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 16px; }
+.hist-row { padding: 10px 0; border-bottom: 1px solid #f0f0ee; }
+.hist-row:last-child { border-bottom: none; }
+.hist-mat { font-size: 14px; font-weight: 600; }
+.hist-detalhe { font-size: 12px; color: #888; margin-top: 2px; }
+.hist-valor { font-size: 14px; font-weight: 700; color: #0F6E56; }
+.sync-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0F6E56; margin-right: 6px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+/* Senha modal */
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center; }
+.modal-bg.show { display:flex; }
+.modal { background:#fff; border-radius:20px; padding:1.5rem; width:90%; max-width:340px; }
+.modal h2 { font-size:18px; font-weight:700; margin-bottom:6px; }
+.modal p { font-size:13px; color:#888; margin-bottom:16px; }
+.modal-error { color:#c0392b; font-size:13px; margin-top:-8px; margin-bottom:10px; display:none; }
+/* Admin */
+.admin-section { margin-bottom: 1.5rem; }
+.admin-section-title { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.mat-admin-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; }
+.mat-admin-row:last-child { border-bottom: none; }
+.mat-admin-nome { flex: 1; font-size: 14px; font-weight: 500; }
+.ticket-admin-row { background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+.ticket-admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.ticket-admin-num { font-weight: 700; color: #185FA5; }
+.ticket-admin-actions { display: flex; gap: 6px; margin-top: 8px; }
+.add-mat-row { display: flex; gap: 8px; margin-top: 8px; }
+.add-mat-row input { flex: 1; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- MODAL SENHA -->
+<div class="modal-bg" id="modal-senha">
+  <div class="modal">
+    <h2 id="modal-titulo">🔒 Área restrita</h2>
+    <p id="modal-desc">Digite a senha para continuar</p>
+    <label>Senha</label>
+    <input type="password" id="modal-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmarSenha()">
+    <div class="modal-error" id="modal-erro">Senha incorreta. Tente novamente.</div>
+    <button class="btn btn-primary" onclick="confirmarSenha()">Entrar</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="fecharModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL ATENDENTE -->
+<div class="modal-bg" id="modal-atendente">
+  <div class="modal">
+    <h2>👋 Quem está atendendo?</h2>
+    <p>Digite seu nome para registrar os pagamentos</p>
+    <label>Seu nome</label>
+    <input type="text" id="atendente-input" placeholder="Ex: Maria, João..." onkeydown="if(event.key==='Enter')confirmarAtendente()">
+    <button class="btn btn-primary" style="margin-top:4px" onclick="confirmarAtendente()">Entrar no caixa</button>
+  </div>
+</div>
+
+<!-- ROTA -->
+<div id="screen-rota" class="screen">
+  <div class="header">
+    <span class="back" onclick="sairTela('screen-rota')">‹</span>
+    <h1>🚛 Materiais de Rota</h1>
+  </div>
+
+  <!-- Form novo lançamento -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px">➕ Novo lançamento de rota</div>
+    <label>Cliente visitado *</label>
+    <input type="text" id="rota-cliente" placeholder="Nome do cliente" oninput="sugerirClienteRota()" autocomplete="off">
+    <div id="sugestoes-rota" style="display:none;background:#fff;border:1px solid #ddd;border-radius:10px;margin-top:-10px;margin-bottom:14px;overflow:hidden"></div>
+
+    <label>Material</label>
+    <select id="rota-material"><option value="">Selecione o material...</option></select>
+    <label>Peso (kg)</label>
+    <input type="text" id="rota-peso" placeholder="0,000 kg" inputmode="numeric" oninput="mascaraPeso(this)">
+    <button class="btn btn-secondary" style="margin-bottom:12px" onclick="addItemRota()">+ Adicionar material</button>
+
+    <div id="rota-itens-lista"></div>
+    <div id="rota-subtotal-area" style="display:none">
+      <div class="subtotal-bar"><span>Subtotal peso</span><span id="rota-subtotal-val">0 kg</span></div>
+    </div>
+
+    <label>Valor total pago ao cliente (R$)</label>
+    <input type="number" id="rota-valor" placeholder="0,00" min="0" step="0.01">
+    <label>Forma de pagamento</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div id="rfp-dinheiro" class="fp-btn active" onclick="selecionarFPRota('dinheiro')">💵 Dinheiro</div>
+      <div id="rfp-pix" class="fp-btn" onclick="selecionarFPRota('pix')">📱 Pix</div>
+      <div id="rfp-cartao" class="fp-btn" onclick="selecionarFPRota('cartao')">💳 Cartão</div>
+    </div>
+    <label>Data da coleta</label>
+    <input type="date" id="rota-data" style="margin-bottom:14px">
+    <button class="btn btn-warning" onclick="lancarRota()">🚛 Lançar coleta</button>
+  </div>
+
+  <!-- Lista do dia -->
+  <div class="tabs">
+    <div class="tab active" id="rtab-hoje" onclick="setRotaTab('hoje')">Hoje</div>
+    <div class="tab" id="rtab-semana" onclick="setRotaTab('semana')">Semana</div>
+    <div class="tab" id="rtab-todas" onclick="setRotaTab('todas')">Todas</div>
+  </div>
+  <div id="rota-lista"><div class="loading">Carregando...</div></div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-screen show" id="login-screen">
+  <div class="login-logo">
+    <span class="icon">♻️</span>
+    <h2>Mastrela Reciclagem</h2>
+    <p>Selecione seu usuário ou acesse a balança</p>
+  </div>
+  <div style="width:100%;max-width:340px">
+    <div class="user-btn" onclick="goTo('screen-balanca')" style="border-color:#185FA5;margin-bottom:20px">
+      <div class="user-avatar" style="background:#185FA5">⚖️</div>
+      <div class="user-info-name">Balança</div>
+    </div>
+    <div style="font-size:12px;color:#aaa;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Login</div>
+    <div class="user-btn" onclick="selecionarUsuario('denis')">
+      <div class="user-avatar" style="background:#888">D</div>
+      <div class="user-info-name">Denis</div>
+    </div>
+    <div class="user-btn" onclick="selecionarUsuario('sara')">
+      <div class="user-avatar" style="background:#0F6E56">S</div>
+      <div class="user-info-name">Sara</div>
+    </div>
+  </div>
+  <!-- Mini modal senha dentro da tela de login -->
+  <div id="login-senha-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;">
+    <div class="login-modal">
+      <h2 id="login-modal-titulo">🔒 Denis</h2>
+      <p>Digite sua senha para entrar</p>
+      <label>Senha</label>
+      <input type="password" id="login-senha-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')confirmarLoginSenha()">
+      <div class="login-error" id="login-erro">Senha incorreta.</div>
+      <button class="btn btn-primary" style="margin-top:4px" onclick="confirmarLoginSenha()">Entrar</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="fecharLoginModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="logo-area">
+    <span class="icon">♻️</span>
+    <h2>Mastrela Reciclagem</h2>
+    <p><span class="sync-dot"></span>Sincronizado em tempo real</p>
+  </div>
+  <div style="font-size:13px;color:#888;margin-bottom:12px;text-align:center" id="home-usuario-label"></div>
+  <div class="mode-grid" id="menu-grid">
+    <!-- Renderizado dinamicamente pelo JS -->
+  </div>
+  <button onclick="fazerLogout()" style="margin-top:1.5rem;background:none;border:none;color:#aaa;font-size:13px;cursor:pointer;width:100%;text-align:center">Sair / Trocar usuário</button>
+</div>
+
+<!-- BALANÇA -->
+<div id="screen-balanca" class="screen">
+  <div class="header">
+    <span class="back" onclick="voltarInicio()">‹</span>
+    <h1>Balança — novo ticket</h1>
+  </div>
+  <label>Material</label>
+  <select id="sel-material"><option value="">Selecione o material...</option></select>
+  <label>Peso (kg)</label>
+  <input type="text" id="inp-peso" placeholder="0,000 kg" inputmode="numeric" oninput="mascaraPeso(this)">
+  <button class="btn btn-secondary" onclick="addItem()">+ Adicionar item</button>
+  <div style="margin-top:12px" id="added-items"></div>
+  <div id="subtotal-area" style="display:none">
+    <div class="subtotal-bar"><span>Total de peso</span><span id="subtotal-val">0 kg</span></div>
+  </div>
+  <label style="margin-top:4px">Nome do cliente</label>
+  <input type="text" id="inp-nome" placeholder="Ex: João Silva" oninput="sugerirCliente()" autocomplete="off">
+  <div id="sugestoes-cliente" style="display:none;background:#fff;border:1px solid #ddd;border-radius:10px;margin-top:-10px;margin-bottom:14px;overflow:hidden"></div>
+  <button class="btn btn-primary" onclick="gerarTicket()">🎫 Gerar ticket</button>
+</div>
+
+<!-- TICKET GERADO -->
+<div id="screen-ticket-gerado" class="screen">
+  <div class="header">
+    <span class="back" onclick="goTo('screen-balanca')">‹</span>
+    <h1>Ticket gerado</h1>
+  </div>
+  <div class="ticket-box">
+    <div class="ticket-label">Número do ticket</div>
+    <div class="ticket-num" id="tg-num">—</div>
+    <div class="ticket-label" id="tg-nome" style="margin-top:6px"></div>
+  </div>
+  <div class="card"><div id="tg-items"></div></div>
+  <p style="font-size:13px;color:#0F6E56;margin-top:10px;text-align:center;font-weight:600">✅ Já apareceu no caixa!</p>
+  <button class="btn btn-primary" style="margin-top:14px" onclick="goTo('screen-balanca')">+ Novo ticket</button>
+</div>
+
+<!-- CAIXA -->
+<div id="screen-caixa" class="screen">
+  <div class="header">
+    <span class="back" onclick="sairTela('screen-caixa')">‹</span>
+    <h1>Caixa</h1>
+    <span id="header-atendente" style="font-size:12px;color:#888;white-space:nowrap"></span>
+    <button onclick="trocarAtendente()" style="background:none;border:1px solid #ddd;border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#555">Trocar</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="tab-aguardando" onclick="setTab('aguardando')">⏳ Aguardando</div>
+    <div class="tab" id="tab-pagos" onclick="setTab('pagos')">✅ Pagos hoje</div>
+    <div class="tab" id="tab-vendas" onclick="setTab('vendas')">🏷️ Vendas</div>
+  </div>
+  <div id="fila-lista"><div class="loading">Carregando...</div></div>
+  <div id="detalhe-caixa" style="margin-top:12px"></div>
+  <div id="venda-form" style="display:none"></div>
+</div>
+
+<!-- RELATÓRIO -->
+<div id="screen-relatorio" class="screen">
+  <div class="header">
+    <span class="back" onclick="sairTela('screen-relatorio')">‹</span>
+    <h1>Relatórios</h1>
+  </div>
+  <div style="margin-bottom:12px">
+    <select id="periodo-select" onchange="onPeriodoSelect()" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;background:#fff;-webkit-appearance:none;outline:none;margin:0">
+      <option value="dia">📅 Hoje</option>
+      <option value="ontem">📅 Ontem</option>
+      <option value="semana">📅 Últimos 7 dias</option>
+      <option value="mes">📅 Esse mês</option>
+      <option value="mes_passado">📅 Mês passado</option>
+      <option value="personalizado">🗓️ Personalizado</option>
+    </select>
+  </div>
+  <div id="periodo-custom" style="display:none;background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">De</label>
+        <input type="date" id="data-de" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none" onchange="carregarRelatorio()">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">Até</label>
+        <input type="date" id="data-ate" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none" onchange="carregarRelatorio()">
+      </div>
+    </div>
+  </div>
+  <!-- Busca por cliente -->
+  <div style="position:relative;margin-bottom:12px">
+    <input type="text" id="rel-busca-cliente" placeholder="🔍 Buscar por nome do cliente..." style="margin:0;padding-left:12px" oninput="buscarClienteRelatorio()">
+  </div>
+  <div id="rel-cliente-detalhe" style="display:none"></div>
+  <div id="rel-conteudo-wrap">
+  <div id="rel-conteudo"><div class="loading">Carregando...</div></div>
+  </div><!-- end rel-conteudo-wrap -->
+</div>
+
+<!-- ADMIN -->
+<!-- CLIENTES -->
+<div id="screen-clientes" class="screen">
+  <div class="header">
+    <span class="back" onclick="sairTela('screen-clientes')">‹</span>
+    <h1>👥 Clientes</h1>
+  </div>
+  <div id="cliente-detalhe-view" style="display:none"></div>
+  <div id="cliente-lista-view">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="cliente-busca" placeholder="Buscar por nome ou CPF..." oninput="filtrarClientes()">
+    </div>
+    <button class="btn btn-primary" style="margin-bottom:12px" onclick="mostrarFormCliente()">+ Cadastrar novo cliente</button>
+    <div id="form-novo-cliente" style="display:none" class="card" style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">Novo cliente</div>
+      <label>Nome completo *</label>
+      <input type="text" id="cli-nome" placeholder="Nome do cliente">
+      <label>CPF / CNPJ</label>
+      <input type="text" id="cli-cpf" placeholder="000.000.000-00">
+      <label>Telefone</label>
+      <input type="text" id="cli-tel" placeholder="(62) 99999-9999">
+      <label>Endereço</label>
+      <input type="text" id="cli-end" placeholder="Rua, número, bairro">
+      <button class="btn btn-success" onclick="salvarCliente()">✓ Salvar cliente</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="document.getElementById('form-novo-cliente').style.display='none'">Cancelar</button>
+    </div>
+    <div id="clientes-lista"><div class="loading">Carregando...</div></div>
+  </div>
+</div>
+
+<div id="screen-admin" class="screen">
+  <div class="header">
+    <span class="back" onclick="sairTela('screen-admin')">‹</span>
+    <h1>⚙️ Administração</h1>
+  </div>
+
+  <!-- Materiais -->
+  <div class="admin-section">
+    <div class="admin-section-title">📦 Materiais da lista</div>
+    <div class="card">
+      <div id="admin-mat-lista"><div class="loading">Carregando...</div></div>
+      <div class="add-mat-row" style="margin-top:12px;border-top:1px solid #f0f0ee;padding-top:12px">
+        <input type="text" id="novo-mat-input" placeholder="Nome do novo material" style="margin:0">
+        <button class="btn btn-primary btn-sm" onclick="adicionarMaterial()">+ Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tickets -->
+  <div class="admin-section">
+    <div class="admin-section-title">🎫 Gerenciar tickets</div>
+    <div class="tabs">
+      <div class="tab active" id="atab-abertos" onclick="setAdminTab('abertos')">Em aberto</div>
+      <div class="tab" id="atab-pagos" onclick="setAdminTab('pagos')">Pagos</div>
+      <div class="tab" id="atab-cancelados" onclick="setAdminTab('cancelados')">Cancelados</div>
+    </div>
+    <div id="admin-tickets-lista"><div class="loading">Carregando...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Usuários
+const USUARIOS = {
+  denis: { nome: 'Denis', senha: '1234', perfil: 'operador', cor: '#185FA5' },
+  sara:  { nome: 'Sara',  senha: '200920', perfil: 'admin', cor: '#0F6E56' }
+};
+const SENHA_MIKAEL = '200920';
+const SESSAO_HORAS = 8;
+let usuarioAtual = null;
+let loginPendente = null;
+
+function verificarSessao() {
+  const sessao = JSON.parse(localStorage.getItem('mastrela_sessao')||'null');
+  if (sessao && sessao.expira > Date.now()) {
+    usuarioAtual = sessao.usuario;
+    entrarSistema();
+  }
+}
+
+function selecionarUsuario(id) {
+  loginPendente = id;
+  const u = USUARIOS[id];
+  document.getElementById('login-modal-titulo').textContent = u.cor === '#185FA5' ? '🔵 ' + u.nome : '🟢 ' + u.nome;
+  document.getElementById('login-senha-input').value = '';
+  document.getElementById('login-erro').style.display = 'none';
+  const modal = document.getElementById('login-senha-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('login-senha-input').focus(), 100);
+}
+
+function fecharLoginModal() {
+  document.getElementById('login-senha-modal').style.display = 'none';
+  loginPendente = null;
+}
+
+function confirmarLoginSenha() {
+  const senha = document.getElementById('login-senha-input').value;
+  const u = USUARIOS[loginPendente];
+  if (!u || senha !== u.senha) {
+    document.getElementById('login-erro').style.display = 'block';
+    document.getElementById('login-senha-input').value = '';
+    document.getElementById('login-senha-input').focus();
+    return;
+  }
+  // Salva sessão por 8h
+  usuarioAtual = loginPendente;
+  const sessao = { usuario: loginPendente, expira: Date.now() + SESSAO_HORAS * 60 * 60 * 1000 };
+  localStorage.setItem('mastrela_sessao', JSON.stringify(sessao));
+  fecharLoginModal();
+  entrarSistema();
+}
+
+function entrarSistema() {
+  document.getElementById('login-screen').classList.remove('show');
+  const u = USUARIOS[usuarioAtual];
+  document.getElementById('home-usuario-label').textContent = 'Olá, ' + u.nome + ' 👋';
+  renderizarMenu();
+}
+
+function renderizarMenu() {
+  const u = USUARIOS[usuarioAtual];
+  const isSara = u.perfil === 'admin';
+  const grid = document.getElementById('menu-grid');
+  grid.innerHTML = `
+    <div class="mode-card" onclick="goTo('screen-balanca')">
+      <span class="icon">⚖️</span>
+      <div class="label">Balança</div>
+      <div class="sub">Registrar materiais</div>
+    </div>
+    <div class="mode-card" onclick="abrirCaixa()">
+      <span class="icon">💵</span>
+      <div class="label">Caixa</div>
+      <div class="sub">Fila de pagamento</div>
+    </div>
+    ${isSara ? `
+    <div class="mode-card" onclick="abrirRota()">
+      <span class="icon">🚛</span>
+      <div class="label">Rota</div>
+      <div class="sub">Coletas do motorista</div>
+    </div>
+    <div class="mode-card" onclick="abrirRelatorio()">
+      <span class="icon">📊</span>
+      <div class="label">Relatórios</div>
+      <div class="sub">Fechamento e controle</div>
+    </div>
+    <div class="mode-card" onclick="abrirClientes()">
+      <span class="icon">👥</span>
+      <div class="label">Clientes</div>
+      <div class="sub">Cadastro e histórico</div>
+    </div>
+    <div class="mode-card" style="grid-column:1/-1" onclick="pedirSenhaAdmin()">
+      <span class="icon">⚙️</span>
+      <div class="label">Admin</div>
+      <div class="sub">Materiais e tickets</div>
+    </div>` : ''}
+  `;
+}
+
+function pedirSenhaAdmin() {
+  // Reutiliza modal existente
+  modalDestino = 'admin';
+  document.getElementById('modal-titulo').textContent = '⚙️ Admin';
+  document.getElementById('modal-desc').textContent = 'Digite a senha para acessar';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-senha').classList.add('show');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function voltarInicio() {
+  if (usuarioAtual) {
+    goTo('screen-home');
+  } else {
+    goTo('screen-home');
+    document.getElementById('login-screen').classList.add('show');
+  }
+}
+
+function fazerLogout() {
+  if (!confirm('Sair e trocar usuário?')) return;
+  usuarioAtual = null;
+  localStorage.removeItem('mastrela_sessao');
+  window._atendenteAtual = null;
+  document.getElementById('login-screen').classList.add('show');
+}
+
+// ── Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCJG3f2BUwUUSVMFzJSmtLs3s3mmgv9RSA",
+  authDomain: "mastrela-61075.firebaseapp.com",
+  databaseURL: "https://mastrela-61075-default-rtdb.firebaseio.com",
+  projectId: "mastrela-61075",
+  storageBucket: "mastrela-61075.firebasestorage.app",
+  messagingSenderId: "489698106520",
+  appId: "1:489698106520:web:c18197fbbb5249748584ed"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ── Senhas
+const SENHA_CAIXA = "25262728";
+const SENHA_RELATORIO = "200920";
+const SENHA_ADMIN = "200920";
+
+// ── Estado
+let itens = [];
+let tabAtual = 'aguardando';
+let adminTabAtual = 'abertos';
+let ticketSelecionado = null;
+let periodoAtual = 'dia';
+let filaRef = null;
+let modalDestino = null;
+let materiaisCache = [];
+
+// ── Materiais padrão
+const MATERIAIS_PADRAO = [
+  "Alumínio Cortina","Alumínio Duro","Alumínio Duro Roda","Alumínio Latinha","Alumínio Panela",
+  "Alumínio Chaparia","Alumínio Perfil","Alumínio Perfil 2ª","Alumínio Radiador","Radiador Metal",
+  "Alumínio Off-Set","Alumínio Duro 2ª","Alumínio Mole 2ª","Alumínio Radiador c/ Cobre",
+  "Alumínio Pistão","Alumínio Telha","Antimônio","Bateria","Chumbo","Cobre","Cobre Capa",
+  "Cobre Estanhado","Cobre Mel","Inox","Inox 430","Metal","Sucata de Ferro",
+  "Sucata de Ferro Fundido","Kitute","Separação","Placa Verde","Placa Marrom","Placa Mãe","Litro","Motor"
+];
+
+// ── Init materiais
+// Verifica sessão ao carregar
+window.addEventListener('load', () => { verificarSessao(); });
+
+async function initMateriais() {
+  const snap = await db.ref('materiais').get();
+  if (!snap.exists()) {
+    const obj = {};
+    MATERIAIS_PADRAO.forEach((m,i) => obj['m'+i] = m);
+    await db.ref('materiais').set(obj);
+  }
+  db.ref('materiais').on('value', snap => {
+    const data = snap.val() || {};
+    materiaisCache = Object.entries(data).map(([k,v]) => ({key:k, nome:v})).sort((a,b)=>a.nome.localeCompare(b.nome));
+    popularSelectMateriais();
+  });
+}
+initMateriais();
+
+function popularSelectMateriais() {
+  const sel = document.getElementById('sel-material');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Selecione o material...</option>' +
+    materiaisCache.map(m => `<option value="${m.nome}">${m.nome}</option>`).join('');
+  sel.value = val;
+}
+
+// ── Helpers
+function fmt(v) { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
+function fmtKg(v) { return Number(v).toFixed(2).replace('.',',')+'kg'; }
+// ── VENDAS
+function renderVendas() {
+  const lista = document.getElementById('fila-lista');
+  const vf = document.getElementById('venda-form');
+  vf.style.display = 'none';
+  lista.innerHTML = `
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px">➕ Registrar nova venda</div>
+      <label>Descrição do material vendido</label>
+      <input type="text" id="venda-desc" placeholder="Ex: Alumínio, Cobre...">
+      <label>Valor total (R$)</label>
+      <input type="number" id="venda-valor" placeholder="0.00" min="0" step="0.01">
+      <label>Forma de pagamento</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div id="fp-dinheiro" class="fp-btn active" onclick="selecionarFP('dinheiro')">💵 Dinheiro</div>
+        <div id="fp-pix" class="fp-btn" onclick="selecionarFP('pix')">📱 Pix</div>
+        <div id="fp-cartao" class="fp-btn" onclick="selecionarFP('cartao')">💳 Cartão</div>
+      </div>
+      <button class="btn btn-success" onclick="registrarVenda()">✓ Registrar venda</button>
+    </div>
+    <div id="vendas-lista"><div class="loading">Carregando vendas...</div></div>`;
+  window._formaPagamento = 'dinheiro';
+  carregarVendas();
+}
+function selecionarFP(fp) {
+  window._formaPagamento = fp;
+  ['dinheiro','pix','cartao'].forEach(x => {
+    document.getElementById('fp-'+x).classList.toggle('active', x===fp);
+  });
+}
+async function registrarVenda() {
+  const desc = document.getElementById('venda-desc').value.trim();
+  const valor = parseFloat(document.getElementById('venda-valor').value);
+  const fp = window._formaPagamento || 'dinheiro';
+  if (!desc) { showToast('Descreva o material vendido'); return; }
+  if (!valor || valor <= 0) { showToast('Informe o valor da venda'); return; }
+  await db.ref('vendas').push({ desc, valor, fp, data: Date.now() });
+  showToast('Venda registrada ✓');
+  document.getElementById('venda-desc').value = '';
+  document.getElementById('venda-valor').value = '';
+  carregarVendas();
+}
+async function carregarVendas() {
+  const el = document.getElementById('vendas-lista');
+  if (!el) return;
+  const snap = await db.ref('vendas').get();
+  const vendas = Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>b.data-a.data);
+  const hoje = new Date().toDateString();
+  const vendasHoje = vendas.filter(v => new Date(v.data).toDateString()===hoje);
+  const totalHoje = vendasHoje.reduce((s,v)=>s+v.valor,0);
+  const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'};
+  if (!vendasHoje.length) {
+    el.innerHTML = '<div class="empty">Nenhuma venda hoje.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:10px 12px;background:#f0faf6;border-radius:10px">
+      <span style="font-size:13px;font-weight:600;color:#0F6E56">Total vendido hoje</span>
+      <span style="font-size:18px;font-weight:700;color:#0F6E56">${fmt(totalHoje)}</span>
+    </div>
+    ${vendasHoje.map(v=>`
+      <div class="card" style="margin-bottom:8px;padding:10px 12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:600;font-size:14px">${v.desc}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px">${fpIcon[v.fp]||'💵'} ${v.fp.charAt(0).toUpperCase()+v.fp.slice(1)} · ${new Date(v.data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-weight:700;color:#0F6E56">${fmt(v.valor)}</span>
+            <button class="btn btn-danger btn-sm" onclick="excluirVenda('${v.key}')">🗑️</button>
+          </div>
+        </div>
+      </div>`).join('')}`;
+}
+async function excluirVenda(key) {
+  if (!confirm('Excluir esta venda?')) return;
+  await db.ref('vendas/'+key).remove();
+  showToast('Venda excluída');
+  carregarVendas();
+}
+
+// ── CLIENTE NO CAIXA
+window._clienteSelecionadoCaixa = null;
+
+function mostrarBuscaCliente(num) {
+  window._clienteSelecionadoCaixa = null;
+  document.getElementById('cli-btn-sim').classList.add('active');
+  document.getElementById('cli-btn-nao').classList.remove('active');
+  document.getElementById('form-cadastro-caixa-'+num).style.display = 'none';
+  document.getElementById('busca-cliente-caixa-'+num).style.display = 'block';
+  document.getElementById('cliente-selecionado-'+num).style.display = 'none';
+}
+
+function mostrarFormCadastroCaixa(num) {
+  window._clienteSelecionadoCaixa = null;
+  document.getElementById('cli-btn-nao').classList.add('active');
+  document.getElementById('cli-btn-sim').classList.remove('active');
+  document.getElementById('form-cadastro-caixa-'+num).style.display = 'block';
+  document.getElementById('busca-cliente-caixa-'+num).style.display = 'none';
+  document.getElementById('cliente-selecionado-'+num).style.display = 'none';
+}
+
+async function buscarClienteCaixa(num) {
+  const q = document.getElementById('busca-cpf-nome-'+num).value.trim().toLowerCase();
+  const el = document.getElementById('resultado-busca-'+num);
+  if (q.length < 2) { el.innerHTML = ''; return; }
+  const snap = await db.ref('clientes').get();
+  const clientes = Object.values(snap.val()||{}).filter(c =>
+    c.nome.toLowerCase().includes(q) || (c.cpf||'').includes(q)
+  ).slice(0, 5);
+  if (!clientes.length) { el.innerHTML = '<div style="font-size:13px;color:#888;padding:6px 0">Nenhum cliente encontrado</div>'; return; }
+  el.innerHTML = clientes.map(c => `
+    <div onclick="selecionarClienteCaixa('${c.nome}','${c.cpf||''}','${c.tel||''}',${num})"
+      style="padding:10px;background:#f5f5f4;border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px">
+      <strong>${c.nome}</strong>${c.cpf?' · CPF: '+c.cpf:''}${c.tel?' · '+c.tel:''}
+    </div>`).join('');
+}
+
+function selecionarClienteCaixa(nome, cpf, tel, num) {
+  window._clienteSelecionadoCaixa = { nome, cpf, tel, existente: true };
+  const el = document.getElementById('cliente-selecionado-'+num);
+  el.style.display = 'block';
+  el.innerHTML = '✅ '+nome+(cpf?' · CPF: '+cpf:'');
+  document.getElementById('resultado-busca-'+num).innerHTML = '';
+  document.getElementById('busca-cpf-nome-'+num).value = '';
+}
+
+// ── CLIENTES
+let todosClientes = [];
+function abrirClientes() {
+  goTo('screen-clientes');
+  document.getElementById('cliente-detalhe-view').style.display = 'none';
+  document.getElementById('cliente-lista-view').style.display = 'block';
+  carregarClientes();
+}
+async function carregarClientes() {
+  const snap = await db.ref('clientes').get();
+  const data = snap.val() || {};
+  todosClientes = Object.entries(data).map(([k,v])=>({key:k,...v})).sort((a,b)=>a.nome.localeCompare(b.nome));
+  renderClientes(todosClientes);
+}
+function filtrarClientes() {
+  const q = document.getElementById('cliente-busca').value.toLowerCase().trim();
+  const filtrados = q ? todosClientes.filter(c =>
+    c.nome.toLowerCase().includes(q) || (c.cpf||'').includes(q) || (c.tel||'').includes(q)
+  ) : todosClientes;
+  renderClientes(filtrados);
+}
+function renderClientes(lista) {
+  const el = document.getElementById('clientes-lista');
+  if (!lista.length) { el.innerHTML = '<div class="empty">Nenhum cliente encontrado.</div>'; return; }
+  el.innerHTML = lista.map(c => `
+    <div class="cliente-card" onclick="verCliente('${c.key}')">
+      <div class="cliente-nome">${c.nome}</div>
+      <div class="cliente-info">${c.cpf?'CPF: '+c.cpf+' · ':''}${c.tel?'📞 '+c.tel:''}</div>
+      <div class="cliente-stats">
+        <span class="cliente-stat">🎫 ${c.totalTickets||0} compras</span>
+        <span class="cliente-stat">⚖️ ${((c.totalPeso||0)).toFixed(2).replace('.',',')} kg</span>
+        <span class="cliente-stat">💰 ${fmt(c.totalGasto||0)}</span>
+      </div>
+    </div>`).join('');
+}
+function mostrarFormCliente() {
+  const f = document.getElementById('form-novo-cliente');
+  f.style.display = f.style.display==='none'?'block':'none';
+}
+async function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value.trim();
+  if (!nome) { showToast('Digite o nome do cliente'); return; }
+  const cliente = {
+    nome,
+    cpf: document.getElementById('cli-cpf').value.trim(),
+    tel: document.getElementById('cli-tel').value.trim(),
+    end: document.getElementById('cli-end').value.trim(),
+    criado: Date.now(),
+    totalTickets: 0, totalPeso: 0, totalGasto: 0
+  };
+  await db.ref('clientes').push(cliente);
+  showToast('Cliente cadastrado!');
+  document.getElementById('form-novo-cliente').style.display = 'none';
+  ['cli-nome','cli-cpf','cli-tel','cli-end'].forEach(id => document.getElementById(id).value='');
+  carregarClientes();
+}
+async function verCliente(key) {
+  const snap = await db.ref('clientes/'+key).get();
+  const c = snap.val(); if (!c) return;
+  // Buscar tickets desse cliente
+  const tSnap = await db.ref('tickets').get();
+  const tickets = Object.values(tSnap.val()||{})
+    .filter(t => t.nome && t.nome.toLowerCase()===c.nome.toLowerCase() && t.status==='pago')
+    .sort((a,b)=>b.pago-a.pago);
+  const totalGasto = tickets.reduce((s,t)=>s+(t.totalPago||0),0);
+  const totalPeso = tickets.reduce((s,t)=>s+t.itens.reduce((ss,i)=>ss+i.peso,0),0);
+  // Atualiza stats do cliente
+  await db.ref('clientes/'+key).update({totalTickets:tickets.length, totalPeso, totalGasto});
+  document.getElementById('cliente-lista-view').style.display = 'none';
+  const det = document.getElementById('cliente-detalhe-view');
+  det.style.display = 'block';
+  det.innerHTML = `
+    <div class="header">
+      <span class="back" onclick="voltarListaClientes()">‹</span>
+      <h1>${c.nome}</h1>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      ${c.cpf?`<div class="mat-row"><div class="mat-nome">CPF/CNPJ</div><div style="font-size:14px">${c.cpf}</div></div>`:''}
+      ${c.tel?`<div class="mat-row"><div class="mat-nome">Telefone</div><div style="font-size:14px">${c.tel}</div></div>`:''}
+      ${c.end?`<div class="mat-row"><div class="mat-nome">Endereço</div><div style="font-size:14px">${c.end}</div></div>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#e8f0fb;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#185FA5;font-weight:600">COMPRAS</div>
+        <div style="font-size:20px;font-weight:700;color:#185FA5">${tickets.length}</div>
+      </div>
+      <div style="background:#f0faf6;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#0F6E56;font-weight:600">PESO</div>
+        <div style="font-size:18px;font-weight:700;color:#0F6E56">${totalPeso.toFixed(2).replace('.',',')}kg</div>
+      </div>
+      <div style="background:#fef3c7;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#d97706;font-weight:600">TOTAL</div>
+        <div style="font-size:16px;font-weight:700;color:#d97706">${fmt(totalGasto)}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Histórico de compras</div>
+      ${tickets.length===0?'<div class="empty">Nenhuma compra registrada.</div>':
+        tickets.map(t=>{
+          const data=new Date(t.pago).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+          const hora=new Date(t.pago).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+          const fpIcon={dinheiro:'💵',pix:'📱',cartao:'💳'}[t.formaPagamento||'dinheiro'];
+          return `<div class="hist-row">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div class="hist-mat">${t.itens.map(i=>i.mat).join(', ')}</div>
+                <div class="hist-detalhe">${data} ${hora} · ${t.itens.reduce((s,i)=>s+i.peso,0).toFixed(3).replace('.',',')}kg ${fpIcon||''}</div>
+              </div>
+              <div class="hist-valor">${fmt(t.totalPago||0)}</div>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>
+    <button class="btn btn-danger" style="margin-top:12px" onclick="excluirCliente('${key}')">🗑️ Excluir cliente</button>`;
+}
+function voltarListaClientes() {
+  document.getElementById('cliente-detalhe-view').style.display = 'none';
+  document.getElementById('cliente-lista-view').style.display = 'block';
+  carregarClientes();
+}
+async function excluirCliente(key) {
+  if (!confirm('Excluir este cliente?')) return;
+  await db.ref('clientes/'+key).remove();
+  voltarListaClientes();
+  showToast('Cliente excluído');
+}
+// Sugestão de cliente na balança
+async function sugerirCliente() {
+  const q = document.getElementById('inp-nome').value.trim().toLowerCase();
+  const el = document.getElementById('sugestoes-cliente');
+  if (q.length < 2) { el.style.display='none'; return; }
+  const snap = await db.ref('clientes').get();
+  const clientes = Object.values(snap.val()||{}).filter(c=>c.nome.toLowerCase().includes(q)).slice(0,5);
+  if (!clientes.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = clientes.map(c=>`
+    <div onclick="selecionarClienteBalanca('${c.nome}')" style="padding:10px 12px;border-bottom:1px solid #f0f0ee;cursor:pointer;font-size:14px">
+      <strong>${c.nome}</strong>${c.cpf?' · '+c.cpf:''}${c.tel?' · '+c.tel:''}
+    </div>`).join('');
+}
+function selecionarClienteBalanca(nome) {
+  document.getElementById('inp-nome').value = nome;
+  document.getElementById('sugestoes-cliente').style.display = 'none';
+}
+
+// ── ROTA
+let rotaTabAtual = 'hoje';
+window._fpRota = 'dinheiro';
+
+let itensRota = [];
+
+function abrirRota() {
+  goTo('screen-rota');
+  itensRota = [];
+  document.getElementById('rota-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rota-cliente').value = '';
+  document.getElementById('rota-valor').value = '';
+  const sel = document.getElementById('rota-material');
+  sel.innerHTML = '<option value="">Selecione o material...</option>' +
+    materiaisCache.map(m=>`<option value="${m.nome}">${m.nome}</option>`).join('');
+  renderItensRota();
+  carregarRota();
+}
+
+function addItemRota() {
+  const mat = document.getElementById('rota-material').value;
+  const pesoEl = document.getElementById('rota-peso');
+  const peso = pesoEl._valorKg || parseFloat(pesoEl.value.replace(',','.')) || 0;
+  if (!mat) { showToast('Selecione o material'); return; }
+  if (!peso || peso <= 0) { showToast('Informe o peso'); return; }
+  itensRota.push({ mat, peso });
+  document.getElementById('rota-material').value = '';
+  pesoEl.value = ''; pesoEl._valorKg = undefined;
+  renderItensRota();
+}
+
+function removeItemRota(i) {
+  itensRota.splice(i, 1);
+  renderItensRota();
+}
+
+function renderItensRota() {
+  const el = document.getElementById('rota-itens-lista');
+  const sa = document.getElementById('rota-subtotal-area');
+  if (!itensRota.length) { el.innerHTML = ''; sa.style.display = 'none'; return; }
+  sa.style.display = 'block';
+  let totalPeso = 0;
+  el.innerHTML = itensRota.map((it, i) => {
+    totalPeso += it.peso;
+    return `<div class="added-item">
+      <div><div style="font-weight:600">${it.mat}</div><div style="color:#888;font-size:12px">${fmtKg(it.peso)}</div></div>
+      <button class="remove-btn" onclick="removeItemRota(${i})">×</button>
+    </div>`;
+  }).join('');
+  document.getElementById('rota-subtotal-val').textContent = fmtKg(totalPeso);
+}
+
+function selecionarFPRota(fp) {
+  window._fpRota = fp;
+  ['dinheiro','pix','cartao'].forEach(x=>{
+    const el = document.getElementById('rfp-'+x);
+    if(el) el.classList.toggle('active', x===fp);
+  });
+}
+
+async function sugerirClienteRota() {
+  const q = document.getElementById('rota-cliente').value.trim().toLowerCase();
+  const el = document.getElementById('sugestoes-rota');
+  if (q.length < 2) { el.style.display='none'; return; }
+  const snap = await db.ref('clientes').get();
+  const clientes = Object.values(snap.val()||{}).filter(c=>c.nome.toLowerCase().includes(q)).slice(0,5);
+  if (!clientes.length) { el.style.display='none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = clientes.map(c=>`
+    <div onclick="selecionarClienteRota('${c.nome.replace(/'/g,"\'")}')"
+      style="padding:10px 12px;border-bottom:1px solid #f0f0ee;cursor:pointer;font-size:14px">
+      <strong>${c.nome}</strong>${c.cpf?' · '+c.cpf:''}
+    </div>`).join('');
+}
+
+function selecionarClienteRota(nome) {
+  document.getElementById('rota-cliente').value = nome;
+  document.getElementById('sugestoes-rota').style.display = 'none';
+}
+
+async function lancarRota() {
+  const cliente = document.getElementById('rota-cliente').value.trim();
+  const valor = parseFloat(document.getElementById('rota-valor').value) || 0;
+  const data = document.getElementById('rota-data').value;
+  const fp = window._fpRota || 'dinheiro';
+
+  if (!cliente) { showToast('Informe o cliente visitado'); return; }
+  if (!itensRota.length) { showToast('Adicione pelo menos um material'); return; }
+  if (!valor || valor <= 0) { showToast('Informe o valor total pago'); return; }
+
+  const dataTs = data ? new Date(data+'T12:00:00').getTime() : Date.now();
+  const totalPeso = itensRota.reduce((s,i)=>s+i.peso, 0);
+
+  await db.ref('rotas').push({
+    cliente, itens: [...itensRota], totalPeso, valor, fp,
+    // Keep material field for backward compat - use first item
+    material: itensRota.map(i=>i.mat).join(', '),
+    data: dataTs, criado: Date.now(),
+    lancadoPor: usuarioAtual ? USUARIOS[usuarioAtual]?.nome : 'Sara'
+  });
+
+  // Salva cliente se não existir
+  const snapCli = await db.ref('clientes').get();
+  const clientes = Object.values(snapCli.val()||{});
+  if (!clientes.find(c=>c.nome.toLowerCase()===cliente.toLowerCase())) {
+    await db.ref('clientes').push({ nome:cliente, criado:Date.now(), totalTickets:0, totalPeso:0, totalGasto:0, origem:'rota' });
+  }
+
+  // Limpa form
+  document.getElementById('rota-cliente').value = '';
+  document.getElementById('rota-valor').value = '';
+  document.getElementById('rota-data').value = new Date().toISOString().split('T')[0];
+  window._fpRota = 'dinheiro';
+  ['dinheiro','pix','cartao'].forEach(x=>{
+    const el=document.getElementById('rfp-'+x);
+    if(el) el.classList.toggle('active',x==='dinheiro');
+  });
+  itensRota = [];
+  renderItensRota();
+
+  showToast('Coleta lançada ✓');
+  carregarRota();
+}
+
+function setRotaTab(t) {
+  rotaTabAtual = t;
+  ['hoje','semana','todas'].forEach(x=>{
+    document.getElementById('rtab-'+x).classList.toggle('active',x===t);
+  });
+  carregarRota();
+}
+
+async function carregarRota() {
+  const el = document.getElementById('rota-lista');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Carregando...</div>';
+  const snap = await db.ref('rotas').get();
+  const todas = Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v}));
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const semana = new Date(); semana.setDate(semana.getDate()-6); semana.setHours(0,0,0,0);
+
+  let filtradas = todas.filter(r=>{
+    const d = new Date(r.data);
+    if (rotaTabAtual==='hoje') return d>=hoje;
+    if (rotaTabAtual==='semana') return d>=semana;
+    return true;
+  }).sort((a,b)=>b.data-a.data);
+
+  if (!filtradas.length) { el.innerHTML='<div class="empty">Nenhuma coleta registrada.</div>'; return; }
+
+  const totalValor = filtradas.reduce((s,r)=>s+r.valor,0);
+  const totalPeso = filtradas.reduce((s,r)=>s+r.peso,0);
+  const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'};
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="background:#fef3c7;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#d97706;font-weight:600">TOTAL PAGO</div>
+        <div style="font-size:18px;font-weight:700;color:#d97706">${fmt(totalValor)}</div>
+      </div>
+      <div style="background:#f0faf6;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#0F6E56;font-weight:600">PESO TOTAL</div>
+        <div style="font-size:18px;font-weight:700;color:#0F6E56">${fmtKg(totalPeso)}</div>
+      </div>
+    </div>
+    ${filtradas.map(r=>{
+      const data = new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      return `<div class="rota-card">
+        <div class="rota-header">
+          <span class="rota-nome">${r.cliente}</span>
+          <span class="rota-total">${fmt(r.valor)}</span>
+        </div>
+        <div class="rota-detalhe">${r.material} · ${fmtKg(r.peso)} · ${fpIcon[r.fp]||'💵'} · ${data}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+// ── DRILL DOWN MATERIAL
+function verDetalhesMaterial(matNome, pagos) {
+  const tickets = pagos.filter(t => t.itens.some(i => i.mat === matNome));
+  const el = document.getElementById('rel-conteudo');
+  const totalMat = tickets.reduce((s,t)=>{
+    const it = t.itens.find(i=>i.mat===matNome);
+    return s+(it?.subtotal||0);
+  }, 0);
+  const totalPeso = tickets.reduce((s,t)=>{
+    const it = t.itens.find(i=>i.mat===matNome);
+    return s+(it?.peso||0);
+  }, 0);
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button onclick="carregarRelatorio()" style="background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer">‹ Voltar</button>
+      <span style="font-size:16px;font-weight:700">${matNome}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#e8f0fb;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#185FA5;font-weight:600">COMPRAS</div>
+        <div style="font-size:20px;font-weight:700;color:#185FA5">${tickets.length}</div>
+      </div>
+      <div style="background:#f0faf6;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#0F6E56;font-weight:600">PESO</div>
+        <div style="font-size:18px;font-weight:700;color:#0F6E56">${fmtKg(totalPeso)}</div>
+      </div>
+      <div style="background:#fef3c7;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#d97706;font-weight:600">TOTAL</div>
+        <div style="font-size:16px;font-weight:700;color:#d97706">${fmt(totalMat)}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Quem vendeu</div>
+      ${tickets.sort((a,b)=>b.pago-a.pago).map(t=>{
+        const it = t.itens.find(i=>i.mat===matNome);
+        const data = new Date(t.pago).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+        const hora = new Date(t.pago).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'}[t.formaPagamento||'dinheiro'];
+        return `<div class="hist-row">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="hist-mat">${t.nome||'Sem nome'}</div>
+              <div class="hist-detalhe">${data} ${hora} · ${fmtKg(it?.peso||0)} · ${fpIcon}</div>
+            </div>
+            <div class="hist-valor">${fmt(it?.subtotal||0)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── BUSCA CLIENTE NO RELATÓRIO
+async function buscarClienteRelatorio() {
+  const q = document.getElementById('rel-busca-cliente').value.trim();
+  const detEl = document.getElementById('rel-cliente-detalhe');
+  const conteudo = document.getElementById('rel-conteudo');
+  if (q.length < 2) {
+    detEl.style.display = 'none';
+    conteudo.style.display = 'block';
+    return;
+  }
+  // Busca nos tickets pagos
+  const snap = await db.ref('tickets').get();
+  const todos = Object.values(snap.val()||{});
+  const tickets = todos.filter(t =>
+    t.status==='pago' &&
+    t.nome && t.nome.toLowerCase().includes(q.toLowerCase())
+  ).sort((a,b)=>b.pago-a.pago);
+
+  conteudo.style.display = 'none';
+  detEl.style.display = 'block';
+
+  if (!tickets.length) {
+    detEl.innerHTML = `<div class="empty">Nenhuma compra encontrada para "${q}"</div>`;
+    return;
+  }
+
+  const totalGasto = tickets.reduce((s,t)=>s+(t.totalPago||0),0);
+  const totalPeso = tickets.reduce((s,t)=>s+t.itens.reduce((ss,i)=>ss+i.peso,0),0);
+  const nomeCliente = tickets[0].nome;
+
+  detEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button onclick="limparBuscaCliente()" style="background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer">‹ Voltar</button>
+      <span style="font-size:16px;font-weight:700">${nomeCliente}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#e8f0fb;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#185FA5;font-weight:600">COMPRAS</div>
+        <div style="font-size:20px;font-weight:700;color:#185FA5">${tickets.length}</div>
+      </div>
+      <div style="background:#f0faf6;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#0F6E56;font-weight:600">PESO</div>
+        <div style="font-size:18px;font-weight:700;color:#0F6E56">${fmtKg(totalPeso)}</div>
+      </div>
+      <div style="background:#fef3c7;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:#d97706;font-weight:600">TOTAL</div>
+        <div style="font-size:16px;font-weight:700;color:#d97706">${fmt(totalGasto)}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Histórico completo</div>
+      ${tickets.map(t=>{
+        const data = new Date(t.pago).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+        const hora = new Date(t.pago).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'}[t.formaPagamento||'dinheiro'];
+        const mats = t.itens.map(i=>i.mat+' '+fmtKg(i.peso)).join(', ');
+        return `<div class="hist-row">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="flex:1;min-width:0;margin-right:10px">
+              <div class="hist-mat" style="font-size:13px">${mats}</div>
+              <div class="hist-detalhe">${data} ${hora} ${fpIcon} · ${t.atendente||''}</div>
+            </div>
+            <div class="hist-valor">${fmt(t.totalPago||0)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function limparBuscaCliente() {
+  document.getElementById('rel-busca-cliente').value = '';
+  document.getElementById('rel-cliente-detalhe').style.display = 'none';
+  document.getElementById('rel-conteudo').style.display = 'block';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Navegação
+function goTo(id) {
+  // Esconde tela de login se estiver visível
+  document.getElementById('login-screen').classList.remove('show');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-balanca') {
+    itens = [];
+    ['inp-nome','inp-peso'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    const sel = document.getElementById('sel-material');
+    if(sel) sel.value = '';
+    renderItens();
+  }
+  if (filaRef && id !== 'screen-caixa') { filaRef.off(); filaRef = null; }
+}
+
+function sairTela(from) {
+  if (filaRef) { filaRef.off(); filaRef = null; }
+  goTo('screen-home');
+}
+function trocarAtendente() {
+  window._atendenteAtual = null;
+  if (filaRef) { filaRef.off(); filaRef = null; }
+  document.getElementById('atendente-input').value = '';
+  document.getElementById('modal-atendente').classList.add('show');
+  setTimeout(() => document.getElementById('atendente-input').focus(), 100);
+}
+
+// ── Senha modal
+function pedirSenha(destino) {
+  modalDestino = destino;
+  const titulos = { caixa:'💵 Caixa', relatorio:'📊 Relatórios', admin:'⚙️ Admin', clientes:'👥 Clientes' };
+  document.getElementById('modal-titulo').textContent = titulos[destino] || 'Área restrita';
+  document.getElementById('modal-desc').textContent = 'Digite a senha para acessar';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-senha').classList.add('show');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+function fecharModal() {
+  document.getElementById('modal-senha').classList.remove('show');
+  modalDestino = null;
+}
+function confirmarSenha() {
+  const senha = document.getElementById('modal-input').value;
+  const senhaCorreta = modalDestino === 'admin' ? SENHA_ADMIN : (modalDestino === 'relatorio' || modalDestino === 'clientes') ? SENHA_RELATORIO : SENHA_CAIXA;
+  if (senha !== senhaCorreta) {
+    document.getElementById('modal-erro').style.display = 'block';
+    document.getElementById('modal-input').value = '';
+    document.getElementById('modal-input').focus();
+    return;
+  }
+  const destino = modalDestino;
+  fecharModal();
+  if (destino === 'caixa') abrirCaixa();
+  else if (destino === 'relatorio') abrirRelatorio();
+  else if (destino === 'admin') abrirAdmin();
+  else if (destino === 'clientes') abrirClientes();
+}
+
+// ── BALANÇA
+function mascaraPeso(el) {
+  let digits = el.value.replace(/\D/g,'');
+  if (!digits) { el.value = ''; return; }
+  let num = parseInt(digits, 10);
+  let kg = num / 1000;
+  el.value = kg.toFixed(3).replace('.', ',') + ' kg';
+  el._valorKg = kg;
+}
+function getPesoValue() {
+  const el = document.getElementById('inp-peso');
+  if (el._valorKg !== undefined) return el._valorKg;
+  return parseFloat(el.value.replace(',','.')) || 0;
+}
+function addItem() {
+  const mat = document.getElementById('sel-material').value;
+  const peso = getPesoValue();
+  if (!mat) { showToast('Selecione o material'); return; }
+  if (!peso || peso <= 0) { showToast('Informe o peso'); return; }
+  itens.push({ mat, peso });
+  document.getElementById('sel-material').value = '';
+  const pesoEl = document.getElementById('inp-peso');
+  pesoEl.value = '';
+  pesoEl._valorKg = undefined;
+  renderItens();
+}
+function renderItens() {
+  const el = document.getElementById('added-items');
+  const sa = document.getElementById('subtotal-area');
+  if (!itens.length) { el.innerHTML = ''; sa.style.display = 'none'; return; }
+  sa.style.display = 'block';
+  let totalPeso = 0;
+  el.innerHTML = itens.map((it,i) => {
+    totalPeso += it.peso;
+    return `<div class="added-item">
+      <div><div style="font-weight:600">${it.mat}</div><div style="color:#888;font-size:12px">${fmtKg(it.peso)}</div></div>
+      <button class="remove-btn" onclick="removeItem(${i})">×</button>
+    </div>`;
+  }).join('');
+  document.getElementById('subtotal-val').textContent = fmtKg(totalPeso);
+}
+function removeItem(i) { itens.splice(i,1); renderItens(); }
+async function gerarTicket() {
+  if (!itens.length) { showToast('Adicione pelo menos um item'); return; }
+  const nome = document.getElementById('inp-nome').value.trim();
+  const num = await db.ref('counter').transaction(v => (v||0)+1).then(r => r.snapshot.val());
+  const ticket = { num, nome, itens:[...itens], status:'aberto', criado:Date.now() };
+  await db.ref('tickets/'+num).set(ticket);
+  document.getElementById('tg-num').textContent = String(num).padStart(4,'0');
+  document.getElementById('tg-nome').textContent = nome ? 'Cliente: '+nome : '';
+  document.getElementById('tg-items').innerHTML = itens.map(it =>
+    `<div class="item-row"><div class="item-name">${it.mat}</div><div style="font-weight:600;color:#555">${fmtKg(it.peso)}</div></div>`
+  ).join('');
+  goTo('screen-ticket-gerado');
+}
+
+// ── CAIXA
+function abrirCaixa() {
+  // Auto-define atendente pelo usuário logado
+  if (usuarioAtual && USUARIOS[usuarioAtual]) {
+    window._atendenteAtual = USUARIOS[usuarioAtual].nome;
+  }
+  // Se já tem atendente na sessão, vai direto
+  if (window._atendenteAtual) {
+    ticketSelecionado = null;
+    goTo('screen-caixa');
+    atualizarHeaderAtendente();
+    escutarFila();
+  } else {
+    document.getElementById('atendente-input').value = '';
+    document.getElementById('modal-atendente').classList.add('show');
+    setTimeout(() => document.getElementById('atendente-input').focus(), 100);
+  }
+}
+function confirmarAtendente() {
+  const nome = document.getElementById('atendente-input').value.trim();
+  if (!nome) { showToast('Digite seu nome'); return; }
+  window._atendenteAtual = nome;
+  document.getElementById('modal-atendente').classList.remove('show');
+  ticketSelecionado = null;
+  goTo('screen-caixa');
+  atualizarHeaderAtendente();
+  escutarFila();
+}
+function atualizarHeaderAtendente() {
+  const h = document.getElementById('header-atendente');
+  if (h) h.textContent = '👤 ' + (window._atendenteAtual||'');
+}
+function setTab(t) {
+  tabAtual = t; ticketSelecionado = null;
+  document.getElementById("detalhe-caixa").innerHTML = "";
+  document.getElementById("tab-aguardando").classList.toggle("active", t==="aguardando");
+  document.getElementById("tab-pagos").classList.toggle("active", t==="pagos");
+  document.getElementById("tab-vendas").classList.toggle("active", t==="vendas");
+  if (t === "vendas") {
+    document.getElementById("fila-lista").innerHTML = "";
+    renderVendas();
+  } else {
+    if (window._ultimosTickets) renderFila(window._ultimosTickets);
+  }
+}
+function escutarFila() {
+  if (filaRef) filaRef.off();
+  filaRef = db.ref("tickets");
+  filaRef.on("value", snap => {
+    window._ultimosTickets = snap.val() || {};
+    renderFila(window._ultimosTickets);
+  });
+}
+function renderFila(tickets) {
+  const lista = document.getElementById('fila-lista');
+  const hoje = new Date().toDateString();
+  let filtrados = Object.values(tickets).filter(t => {
+    if (tabAtual==='aguardando') return t.status==='aberto';
+    if (tabAtual==='pagos') return t.status==='pago' && new Date(t.pago).toDateString()===hoje;
+    return false;
+  }).sort((a,b) => a.criado-b.criado);
+  if (!filtrados.length) {
+    lista.innerHTML = `<div class="empty">${tabAtual==='aguardando'?'Nenhum cliente aguardando.':'Nenhum pagamento hoje.'}</div>`;
+    return;
+  }
+  lista.innerHTML = filtrados.map(t => {
+    const nome = t.nome||('Ticket #'+String(t.num).padStart(4,'0'));
+    const mats = t.itens.map(i=>i.mat).join(', ');
+    const totalPeso = t.itens.reduce((s,i)=>s+i.peso,0);
+    const sel = ticketSelecionado===t.num;
+    const cls = t.status==='pago'?'pago':sel?'selected':'';
+    const horaCriado = new Date(t.criado).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const horaPago = t.pago ? new Date(t.pago).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : null;
+    return `<div class="fila-card ${cls}" onclick="selecionarTicket(${t.num})">
+      <div class="fila-header">
+        <span class="fila-nome">${nome}</span>
+        ${t.status==='pago'?'<span class="badge badge-pago">✓ Pago</span>':'<span class="fila-numero">#'+String(t.num).padStart(4,'0')+'</span>'}
+      </div>
+      <div class="fila-resumo">${mats} · ${fmtKg(totalPeso)}</div>
+      <div style="font-size:12px;color:#aaa;margin-top:3px">🕐 Entrada: ${horaCriado}${horaPago ? ' · ✅ Pago: '+horaPago : ''}</div>
+      ${t.status==='pago'?`<div class="fila-total">${fmt(t.totalPago||0)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+async function selecionarTicket(num) {
+  const snap = await db.ref('tickets/'+num).get();
+  const t = snap.val();
+  if (!t||t.status!=='aberto') return;
+  ticketSelecionado = num;
+  window._ticketItens = t.itens;
+  const hora = new Date(t.criado).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('detalhe-caixa').innerHTML = `
+    <div class="card" style="border-color:#185FA5;background:#f0f6ff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:18px;font-weight:700;color:#185FA5">#${String(t.num).padStart(4,'0')} — ${t.nome||'sem nome'}</span>
+        <span class="badge badge-aberto">Em aberto</span>
+      </div>
+      <div style="font-size:13px;color:#888;margin-bottom:12px">${hora}</div>
+      <div class="preco-group">
+        <div class="preco-group-label">💰 Lançar preço por kg</div>
+        ${t.itens.map((it,i)=>`
+          <div class="preco-row">
+            <label>${it.mat} (${fmtKg(it.peso)})</label>
+            <input type="number" id="preco-${i}" placeholder="R$/kg" min="0" step="0.01" oninput="atualizarPreview()">
+          </div>`).join('')}
+      </div>
+      <div id="total-preview" style="font-size:16px;font-weight:700;color:#0F6E56;text-align:right;margin:8px 0 4px;min-height:24px"></div>
+      <!-- Cliente -->
+      <div style="margin:10px 0 8px">
+        <div style="font-size:12px;color:#888;font-weight:600;margin-bottom:8px">👤 CLIENTE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div id="cli-btn-sim" class="fp-btn" onclick="mostrarBuscaCliente(${num})">✅ Tem cadastro</div>
+          <div id="cli-btn-nao" class="fp-btn active" onclick="mostrarFormCadastroCaixa(${num})">➕ Cadastrar agora</div>
+        </div>
+        <div id="cliente-caixa-area-${num}">
+          <!-- form cadastro rápido visível por padrão -->
+          <div id="form-cadastro-caixa-${num}">
+            <input type="text" id="caixa-cli-nome-${num}" placeholder="Nome do cliente *" style="margin-bottom:8px">
+            <input type="text" id="caixa-cli-cpf-${num}" placeholder="CPF (opcional)" style="margin-bottom:8px">
+            <input type="text" id="caixa-cli-tel-${num}" placeholder="Telefone (opcional)" style="margin-bottom:0">
+          </div>
+          <div id="busca-cliente-caixa-${num}" style="display:none">
+            <div style="display:flex;gap:8px">
+              <input type="text" id="busca-cpf-nome-${num}" placeholder="Digite nome ou CPF..." style="margin:0;flex:1" oninput="buscarClienteCaixa(${num})">
+            </div>
+            <div id="resultado-busca-${num}" style="margin-top:6px"></div>
+          </div>
+        </div>
+        <div id="cliente-selecionado-${num}" style="display:none;background:#f0faf6;border-radius:10px;padding:10px;margin-top:6px;font-size:13px;color:#0F6E56;font-weight:600"></div>
+      </div>
+      <div style="margin:10px 0 4px">
+        <div style="font-size:12px;color:#888;font-weight:600;margin-bottom:8px">💳 FORMA DE PAGAMENTO</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div id="cpfp-dinheiro" class="fp-btn active" onclick="selecionarFPC('dinheiro')">💵 Dinheiro</div>
+          <div id="cpfp-pix" class="fp-btn" onclick="selecionarFPC('pix')">📱 Pix</div>
+          <div id="cpfp-cartao" class="fp-btn" onclick="selecionarFPC('cartao')">💳 Cartão</div>
+        </div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-success" onclick="pagarTicket(${num})">✓ Confirmar pagamento</button>
+        <button class="btn btn-danger" onclick="cancelarTicket(${num})">✗ Cancelar</button>
+      </div>
+    </div>`;
+  document.getElementById('detalhe-caixa').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function atualizarPreview() {
+  if (!window._ticketItens) return;
+  let total = 0;
+  window._ticketItens.forEach((it,i) => {
+    const v = parseFloat(document.getElementById('preco-'+i)?.value)||0;
+    total += it.peso*v;
+  });
+  document.getElementById('total-preview').textContent = total>0?'Total: '+fmt(total):'';
+}
+function selecionarFPC(fp) {
+  window._formaPagamentoCompra = fp;
+  ['dinheiro','pix','cartao'].forEach(x => {
+    const el = document.getElementById('cpfp-'+x);
+    if (el) el.classList.toggle('active', x===fp);
+  });
+}
+async function pagarTicket(num) {
+  const snap = await db.ref('tickets/'+num).get();
+  const t = snap.val(); if(!t) return;
+  let total = 0;
+  const itensComPreco = t.itens.map((it,i) => {
+    const preco = parseFloat(document.getElementById('preco-'+i)?.value)||0;
+    const subtotal = it.peso*preco; total += subtotal;
+    return {...it, preco, subtotal};
+  });
+  if (total<=0) { showToast('Lance o preço dos itens'); return; }
+  const fp = window._formaPagamentoCompra || 'dinheiro';
+
+  // Resolve cliente
+  let clienteNome = t.nome || '';
+  let clienteKey = null;
+  if (window._clienteSelecionadoCaixa?.existente) {
+    // Cliente existente encontrado pela busca
+    clienteNome = window._clienteSelecionadoCaixa.nome;
+  } else {
+    // Tenta pegar do form de cadastro rápido
+    const nomeInput = document.getElementById('caixa-cli-nome-'+num);
+    const cpfInput = document.getElementById('caixa-cli-cpf-'+num);
+    const telInput = document.getElementById('caixa-cli-tel-'+num);
+    if (nomeInput && nomeInput.value.trim()) {
+      clienteNome = nomeInput.value.trim();
+      const cpf = cpfInput?.value.trim()||'';
+      const tel = telInput?.value.trim()||'';
+      // Salva cliente novo no banco
+      const novoCliente = { nome:clienteNome, cpf, tel, criado:Date.now(), totalTickets:0, totalPeso:0, totalGasto:0 };
+      const ref = await db.ref('clientes').push(novoCliente);
+      clienteKey = ref.key;
+    }
+  }
+
+  const totalPeso = t.itens.reduce((s,i)=>s+i.peso,0);
+  await db.ref('tickets/'+num).update({
+    status:'pago', pago:Date.now(), totalPago:total,
+    itens:itensComPreco, formaPagamento:fp, nome:clienteNome,
+    atendente: window._atendenteAtual||'Não informado'
+  });
+
+  // Atualiza stats do cliente se existente
+  if (window._clienteSelecionadoCaixa?.existente && clienteNome) {
+    const cliSnap = await db.ref('clientes').orderByChild('nome').equalTo(clienteNome).get();
+    if (cliSnap.exists()) {
+      const entries = Object.entries(cliSnap.val());
+      if (entries.length) {
+        const [key, cli] = entries[0];
+        await db.ref('clientes/'+key).update({
+          totalTickets: (cli.totalTickets||0)+1,
+          totalPeso: (cli.totalPeso||0)+totalPeso,
+          totalGasto: (cli.totalGasto||0)+total
+        });
+      }
+    }
+  }
+
+  ticketSelecionado = null;
+  window._formaPagamentoCompra = 'dinheiro';
+  window._clienteSelecionadoCaixa = null;
+  document.getElementById('detalhe-caixa').innerHTML = '';
+  const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'};
+  showToast('Pago '+fpIcon[fp]+' '+fmt(total)+' ✓');
+}
+async function cancelarTicket(num) {
+  if (!confirm('Cancelar este ticket?')) return;
+  await db.ref('tickets/'+num).update({status:'cancelado'});
+  ticketSelecionado = null;
+  document.getElementById('detalhe-caixa').innerHTML = '';
+  showToast('Ticket cancelado');
+}
+
+// ── RELATÓRIO
+function abrirRelatorio() { goTo('screen-relatorio'); carregarRelatorio(); }
+function onPeriodoSelect() {
+  periodoAtual = document.getElementById('periodo-select').value;
+  const custom = document.getElementById('periodo-custom');
+  if (periodoAtual === 'personalizado') {
+    custom.style.display = 'block';
+    // Set default dates
+    const hoje = new Date();
+    const umaSemanaAtras = new Date(hoje); umaSemanaAtras.setDate(hoje.getDate()-7);
+    if (!document.getElementById('data-de').value) document.getElementById('data-de').value = umaSemanaAtras.toISOString().split('T')[0];
+    if (!document.getElementById('data-ate').value) document.getElementById('data-ate').value = hoje.toISOString().split('T')[0];
+  } else {
+    custom.style.display = 'none';
+  }
+  document.getElementById('rel-cliente-detalhe').style.display = 'none';
+  document.getElementById('rel-busca-cliente').value = '';
+  carregarRelatorio();
+}
+function setPeriodo(p) {
+  periodoAtual = p;
+  carregarRelatorio();
+}
+function dentroDoperiodo(ts, periodo) {
+  const d = new Date(ts), now = new Date();
+  now.setHours(23,59,59,999);
+  if (periodo==='dia') { const s=new Date(); s.setHours(0,0,0,0); return d>=s&&d<=now; }
+  if (periodo==='ontem') { const s=new Date(); s.setDate(s.getDate()-1); s.setHours(0,0,0,0); const e=new Date(s); e.setHours(23,59,59,999); return d>=s&&d<=e; }
+  if (periodo==='semana') { const s=new Date(); s.setDate(s.getDate()-6); s.setHours(0,0,0,0); return d>=s&&d<=now; }
+  if (periodo==='mes') { return d.getMonth()===new Date().getMonth()&&d.getFullYear()===new Date().getFullYear(); }
+  if (periodo==='mes_passado') { const mp=new Date(); mp.setMonth(mp.getMonth()-1); return d.getMonth()===mp.getMonth()&&d.getFullYear()===mp.getFullYear(); }
+  if (periodo==='ano') { return d.getFullYear()===new Date().getFullYear(); }
+  if (periodo==='personalizado') {
+    const de = document.getElementById('data-de')?.value;
+    const ate = document.getElementById('data-ate')?.value;
+    if (!de||!ate) return true;
+    const s=new Date(de+'T00:00:00'); const e=new Date(ate+'T23:59:59');
+    return d>=s&&d<=e;
+  }
+  return false;
+}
+async function carregarRelatorio() {
+  document.getElementById('rel-conteudo').innerHTML='<div class="loading">Carregando...</div>';
+
+  // Carregar compras
+  const snap = await db.ref('tickets').get();
+  const tickets = snap.val()||{};
+  const pagos = Object.values(tickets).filter(t=>t.status==='pago'&&dentroDoperiodo(t.pago,periodoAtual));
+  const totalGeral = pagos.reduce((s,t)=>s+(t.totalPago||0),0);
+  const matMap = {};
+  pagos.forEach(t=>{
+    t.itens.forEach(it=>{
+      if(!matMap[it.mat]) matMap[it.mat]={mat:it.mat,peso:0,total:0,qtd:0};
+      matMap[it.mat].peso+=it.peso; matMap[it.mat].total+=it.subtotal||0; matMap[it.mat].qtd++;
+    });
+  });
+  const mats = Object.values(matMap).sort((a,b)=>b.total-a.total);
+
+  // Carregar rota
+  const rotaSnap = await db.ref('rotas').get();
+  const todasRotas = Object.values(rotaSnap.val()||{});
+  const rotasPeriodo = todasRotas.filter(r => dentroDoperiodo(r.data, periodoAtual));
+  const totalRota = rotasPeriodo.reduce((s,r)=>s+r.valor,0);
+
+  // Carregar vendas
+  const vendasSnap = await db.ref('vendas').get();
+  const todasVendas = Object.values(vendasSnap.val()||{});
+  const vendasPeriodo = todasVendas.filter(v => dentroDoperiodo(v.data, periodoAtual));
+  const totalVendas = vendasPeriodo.reduce((s,v)=>s+v.valor,0);
+  const lucro = totalVendas - totalGeral - totalRota;
+  const fpTotais = {dinheiro:0, pix:0, cartao:0};
+  vendasPeriodo.forEach(v=>{ fpTotais[v.fp||'dinheiro'] += v.valor; });
+  const fpCompras = {dinheiro:0, pix:0, cartao:0};
+  pagos.forEach(t=>{ fpCompras[t.formaPagamento||'dinheiro'] += t.totalPago||0; });
+
+  // Atendentes
+  const atMap = {};
+  pagos.forEach(t=>{
+    const a = t.atendente||'Não informado';
+    if(!atMap[a]) atMap[a]={nome:a, tickets:0, total:0};
+    atMap[a].tickets++;
+    atMap[a].total += t.totalPago||0;
+  });
+  const atendentes = Object.values(atMap).sort((a,b)=>b.total-a.total);
+
+  const periodoLabel={dia:'hoje',ontem:'ontem',semana:'últimos 7 dias',mes:'este mês',mes_passado:'mês passado',ano:'este ano',personalizado:'no período selecionado'}[periodoAtual]||'no período';
+  const el = document.getElementById('rel-conteudo');
+
+  if(!pagos.length && !vendasPeriodo.length){
+    el.innerHTML=`<div class="rel-resumo"><div class="rel-resumo-label">Nenhum movimento ${periodoLabel}</div><div class="rel-resumo-valor">R$ 0,00</div></div>`;
+    return;
+  }
+
+  // Gerar labels para gráfico de linha (por hora/dia dependendo do período)
+  function gerarLabelsEDados() {
+    const comprasPorLabel = {};
+    const vendasPorLabel = {};
+    const now = new Date();
+
+    if (periodoAtual === 'dia') {
+      // Por hora: 0h-23h
+      for (let h=0; h<24; h++) { comprasPorLabel[h]= 0; vendasPorLabel[h]=0; }
+      pagos.forEach(t=>{ const h=new Date(t.pago).getHours(); comprasPorLabel[h]=(comprasPorLabel[h]||0)+(t.totalPago||0); });
+      vendasPeriodo.forEach(v=>{ const h=new Date(v.data).getHours(); vendasPorLabel[h]=(vendasPorLabel[h]||0)+v.valor; });
+      const labels = Object.keys(comprasPorLabel).map(h=>h+'h');
+      return { labels, compras: Object.values(comprasPorLabel), vendas: Object.values(vendasPorLabel) };
+    } else if (periodoAtual === 'semana') {
+      const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      dias.forEach((_,i)=>{ comprasPorLabel[i]=0; vendasPorLabel[i]=0; });
+      pagos.forEach(t=>{ const d=new Date(t.pago).getDay(); comprasPorLabel[d]+=t.totalPago||0; });
+      vendasPeriodo.forEach(v=>{ const d=new Date(v.data).getDay(); vendasPorLabel[d]+=v.valor; });
+      return { labels: dias, compras: Object.values(comprasPorLabel), vendas: Object.values(vendasPorLabel) };
+    } else if (periodoAtual === 'mes') {
+      const diasNoMes = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      for (let d=1; d<=diasNoMes; d++) { comprasPorLabel[d]=0; vendasPorLabel[d]=0; }
+      pagos.forEach(t=>{ const d=new Date(t.pago).getDate(); comprasPorLabel[d]+=t.totalPago||0; });
+      vendasPeriodo.forEach(v=>{ const d=new Date(v.data).getDate(); vendasPorLabel[d]+=v.valor; });
+      return { labels: Object.keys(comprasPorLabel).map(d=>d+'/'+String(now.getMonth()+1).padStart(2,'0')), compras: Object.values(comprasPorLabel), vendas: Object.values(vendasPorLabel) };
+    } else {
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      meses.forEach((_,i)=>{ comprasPorLabel[i]=0; vendasPorLabel[i]=0; });
+      pagos.forEach(t=>{ const m=new Date(t.pago).getMonth(); comprasPorLabel[m]+=t.totalPago||0; });
+      vendasPeriodo.forEach(v=>{ const m=new Date(v.data).getMonth(); vendasPorLabel[m]+=v.valor; });
+      return { labels: meses, compras: Object.values(comprasPorLabel), vendas: Object.values(vendasPorLabel) };
+    }
+  }
+
+  const { labels, compras: comprasData, vendas: vendasData } = gerarLabelsEDados();
+  const maxTotal = mats[0]?.total||1;
+  window.pagosGlobal = pagos;
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="background:#fee2e2;border-radius:14px;padding:1rem;text-align:center">
+        <div style="font-size:11px;color:#991b1b;font-weight:600">📤 COMPRAS</div>
+        <div style="font-size:18px;font-weight:700;color:#c0392b;margin-top:4px">${fmt(totalGeral)}</div>
+        <div style="font-size:11px;color:#991b1b;margin-top:2px">balcão</div>
+      </div>
+      <div style="background:#fef3c7;border-radius:14px;padding:1rem;text-align:center">
+        <div style="font-size:11px;color:#d97706;font-weight:600">🚛 ROTA</div>
+        <div style="font-size:18px;font-weight:700;color:#d97706;margin-top:4px">${fmt(totalRota)}</div>
+        <div style="font-size:11px;color:#d97706;margin-top:2px">coletas</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="background:#dcfce7;border-radius:14px;padding:1rem;text-align:center">
+        <div style="font-size:11px;color:#166534;font-weight:600">📥 VENDAS</div>
+        <div style="font-size:18px;font-weight:700;color:#0F6E56;margin-top:4px">${fmt(totalVendas)}</div>
+      </div>
+      <div style="background:${lucro>=0?'#e8f0fb':'#fee2e2'};border-radius:14px;padding:1rem;text-align:center">
+        <div style="font-size:11px;color:${lucro>=0?'#185FA5':'#c0392b'};font-weight:600">💡 LUCRO</div>
+        <div style="font-size:18px;font-weight:700;color:${lucro>=0?'#185FA5':'#c0392b'};margin-top:4px">${fmt(lucro)}</div>
+      </div>
+    </div>
+
+    <!-- Gráfico entrada x saída -->
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">📈 Entrada vs Saída</div>
+      <canvas id="grafico-linha" height="200"></canvas>
+    </div>
+
+    <!-- Gráfico formas de pagamento -->
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">💳 Pagamentos recebidos nas compras</div>
+      ${fpCompras.dinheiro>0?`<div class="mat-row"><div class="mat-nome">💵 Dinheiro</div><div class="mat-valor" style="color:#c0392b">${fmt(fpCompras.dinheiro)}</div></div>`:''}
+      ${fpCompras.pix>0?`<div class="mat-row"><div class="mat-nome">📱 Pix</div><div class="mat-valor" style="color:#c0392b">${fmt(fpCompras.pix)}</div></div>`:''}
+      ${fpCompras.cartao>0?`<div class="mat-row"><div class="mat-nome">💳 Cartão</div><div class="mat-valor" style="color:#c0392b">${fmt(fpCompras.cartao)}</div></div>`:''}
+      ${!fpCompras.dinheiro&&!fpCompras.pix&&!fpCompras.cartao?'<div style="color:#aaa;font-size:13px">Nenhum registro ainda</div>':''}
+    </div>
+    ${rotasPeriodo.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">🚛 Detalhes da rota</div>
+      ${rotasPeriodo.sort((a,b)=>b.data-a.data).slice(0,10).map(r=>{
+        const data=new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        return `<div class="mat-row">
+          <div><div class="mat-nome">${r.cliente}</div><div class="mat-detalhe">${r.material} · ${fmtKg(r.peso)} · ${data}</div></div>
+          <div class="mat-valor" style="color:#d97706">${fmt(r.valor)}</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+    ${atendentes.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">👤 Por atendente</div>
+      ${atendentes.map(a=>`
+        <div class="mat-row">
+          <div>
+            <div class="mat-nome">${a.nome}</div>
+            <div class="mat-detalhe">${a.tickets} ticket${a.tickets>1?'s':''} atendidos</div>
+          </div>
+          <div class="mat-valor" style="color:#185FA5">${fmt(a.total)}</div>
+        </div>`).join('')}
+    </div>`:''}
+    ${totalVendas>0?`<div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">💳 Vendas por pagamento</div>
+      <canvas id="grafico-pizza" height="200"></canvas>
+      <div style="margin-top:12px">
+        ${fpTotais.dinheiro>0?`<div class="mat-row"><div class="mat-nome">💵 Dinheiro</div><div class="mat-valor">${fmt(fpTotais.dinheiro)}</div></div>`:''}
+        ${fpTotais.pix>0?`<div class="mat-row"><div class="mat-nome">📱 Pix</div><div class="mat-valor">${fmt(fpTotais.pix)}</div></div>`:''}
+        ${fpTotais.cartao>0?`<div class="mat-row"><div class="mat-nome">💳 Cartão</div><div class="mat-valor">${fmt(fpTotais.cartao)}</div></div>`:''}
+      </div>
+    </div>`:''}
+
+    <!-- Materiais comprados -->
+    ${mats.length>0?`<div class="card" style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">📦 Materiais comprados</div>
+      <canvas id="grafico-barras" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Detalhes por material</div>
+      ${mats.map(m=>`
+        <div class="mat-row" onclick="verDetalhesMaterial('${m.mat.replace(/'/g,"\\'")}', pagosGlobal)" style="cursor:pointer">
+          <div style="flex:1;min-width:0">
+            <div class="mat-nome" style="color:#185FA5">${m.mat} <span style="font-size:11px;color:#aaa">▶ ver detalhes</span></div>
+            <div class="mat-detalhe">${fmtKg(m.peso)} · ${m.qtd} compra${m.qtd>1?'s':''}</div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(m.total/maxTotal*100)}%"></div></div>
+          </div>
+          <div class="mat-valor">${fmt(m.total)}</div>
+        </div>`).join('')}
+    </div>`:''}`;
+
+  // Renderiza gráficos depois do HTML
+  setTimeout(() => {
+    // Gráfico de linha: entrada vs saída
+    const ctxLinha = document.getElementById('grafico-linha');
+    if (ctxLinha) {
+      new Chart(ctxLinha, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Entrada (vendas)', data: vendasData, borderColor: '#0F6E56', backgroundColor: 'rgba(15,110,86,0.1)', tension: 0.4, fill: true, pointRadius: 3 },
+            { label: 'Saída (compras)', data: comprasData, borderColor: '#c0392b', backgroundColor: 'rgba(192,57,43,0.1)', tension: 0.4, fill: true, pointRadius: 3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => 'R$'+v.toFixed(0) } }
+          }
+        }
+      });
+    }
+
+    // Gráfico de pizza: formas de pagamento
+    const ctxPizza = document.getElementById('grafico-pizza');
+    if (ctxPizza && totalVendas > 0) {
+      const fpLabels = [], fpVals = [], fpColors = [];
+      if (fpTotais.dinheiro>0) { fpLabels.push('💵 Dinheiro'); fpVals.push(fpTotais.dinheiro); fpColors.push('#185FA5'); }
+      if (fpTotais.pix>0) { fpLabels.push('📱 Pix'); fpVals.push(fpTotais.pix); fpColors.push('#0F6E56'); }
+      if (fpTotais.cartao>0) { fpLabels.push('💳 Cartão'); fpVals.push(fpTotais.cartao); fpColors.push('#d97706'); }
+      new Chart(ctxPizza, {
+        type: 'doughnut',
+        data: { labels: fpLabels, datasets: [{ data: fpVals, backgroundColor: fpColors, borderWidth: 2 }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 13 } } },
+            tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.parsed) } }
+          }
+        }
+      });
+    }
+
+    // Gráfico de barras: top materiais
+    const ctxBarras = document.getElementById('grafico-barras');
+    if (ctxBarras && mats.length > 0) {
+      const top = mats.slice(0, 10);
+      new Chart(ctxBarras, {
+        type: 'bar',
+        data: {
+          labels: top.map(m => m.mat.length > 14 ? m.mat.substring(0,12)+'…' : m.mat),
+          datasets: [{
+            label: 'Valor (R$)',
+            data: top.map(m => m.total),
+            backgroundColor: '#185FA5',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => 'R$'+v.toFixed(0) } },
+            x: { ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }, 100);
+}
+
+// ── ADMIN
+function abrirAdmin() {
+  goTo('screen-admin');
+  carregarAdminMateriais();
+  carregarAdminTickets();
+}
+function carregarAdminMateriais() {
+  const el = document.getElementById('admin-mat-lista');
+  if (!materiaisCache.length) { el.innerHTML = '<div class="loading">Carregando...</div>'; return; }
+  el.innerHTML = materiaisCache.map(m=>`
+    <div class="mat-admin-row">
+      <span class="mat-admin-nome">${m.nome}</span>
+      <button class="btn btn-danger btn-sm" onclick="excluirMaterial('${m.key}','${m.nome.replace(/'/g,"\\'")}')">🗑️</button>
+    </div>`).join('');
+}
+async function adicionarMaterial() {
+  const input = document.getElementById('novo-mat-input');
+  const nome = input.value.trim();
+  if (!nome) { showToast('Digite o nome do material'); return; }
+  await db.ref('materiais').push(nome);
+  input.value = '';
+  showToast('Material adicionado!');
+  carregarAdminMateriais();
+}
+async function excluirMaterial(key, nome) {
+  if (!confirm('Excluir "'+nome+'"?')) return;
+  await db.ref('materiais/'+key).remove();
+  showToast('Material excluído');
+}
+function setAdminTab(t) {
+  adminTabAtual = t;
+  ['abertos','pagos','cancelados'].forEach(x => document.getElementById('atab-'+x).classList.toggle('active',x===t));
+  carregarAdminTickets();
+}
+async function carregarAdminTickets() {
+  const el = document.getElementById('admin-tickets-lista');
+  el.innerHTML = '<div class="loading">Carregando...</div>';
+  const snap = await db.ref('tickets').get();
+  const tickets = Object.values(snap.val()||{}).filter(t=>{
+    if(adminTabAtual==='abertos') return t.status==='aberto';
+    if(adminTabAtual==='pagos') return t.status==='pago';
+    if(adminTabAtual==='cancelados') return t.status==='cancelado';
+  }).sort((a,b)=>b.criado-a.criado);
+  if(!tickets.length){el.innerHTML='<div class="empty">Nenhum ticket.</div>';return;}
+  el.innerHTML = tickets.map(t=>{
+    const nome=t.nome||'sem nome';
+    const hora=new Date(t.criado).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const mats=t.itens.map(i=>i.mat+' '+fmtKg(i.peso)).join(', ');
+    return `<div class="ticket-admin-row">
+      <div class="ticket-admin-header">
+        <span class="ticket-admin-num">#${String(t.num).padStart(4,'0')} — ${nome}</span>
+        <span style="font-size:12px;color:#888">${hora}</span>
+      </div>
+      <div style="font-size:13px;color:#888;margin-top:2px">${mats}</div>
+      ${t.totalPago?`<div style="font-size:14px;font-weight:700;color:#0F6E56;margin-top:4px">${fmt(t.totalPago)}</div>`:''}
+      <div class="ticket-admin-actions">
+        ${t.status!=='aberto'?`<button class="btn btn-warning btn-sm" onclick="reabrirTicket(${t.num})">↩️ Reabrir</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="excluirTicket(${t.num})">🗑️ Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function excluirTicket(num) {
+  if (!confirm('Excluir ticket #'+String(num).padStart(4,'0')+'? Isso não pode ser desfeito.')) return;
+  await db.ref('tickets/'+num).remove();
+  showToast('Ticket excluído');
+  carregarAdminTickets();
+}
+async function reabrirTicket(num) {
+  if (!confirm('Reabrir este ticket?')) return;
+  await db.ref('tickets/'+num).update({status:'aberto', pago:null, totalPago:null});
+  showToast('Ticket reaberto');
+  carregarAdminTickets();
+}
+
+// Atualizar lista admin quando materiais mudam
+db.ref('materiais').on('value', () => { if(document.getElementById('screen-admin').classList.contains('active')) carregarAdminMateriais(); });
+</script>
+</body>
+</html>
