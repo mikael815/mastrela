@@ -230,6 +230,7 @@ select:focus, input:focus { border-color: #185FA5; }
     <div class="tab" id="rtab-semana" onclick="setRotaTab('semana')">Semana</div>
     <div class="tab" id="rtab-todas" onclick="setRotaTab('todas')">Todas</div>
   </div>
+  <input type="text" id="rota-busca" placeholder="🔍 Buscar por nome do cliente..." style="margin-bottom:10px" oninput="carregarRota()">
   <div id="rota-lista"><div class="loading">Carregando...</div></div>
 </div>
 
@@ -1046,11 +1047,12 @@ async function carregarRota() {
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const semana = new Date(); semana.setDate(semana.getDate()-6); semana.setHours(0,0,0,0);
 
+  const busca = (document.getElementById('rota-busca')?.value||'').toLowerCase().trim();
   let filtradas = todas.filter(r=>{
     const d = new Date(r.data);
-    if (rotaTabAtual==='hoje') return d>=hoje;
-    if (rotaTabAtual==='semana') return d>=semana;
-    return true;
+    const periodOk = rotaTabAtual==='hoje' ? d>=hoje : rotaTabAtual==='semana' ? d>=semana : true;
+    const nomeOk = !busca || (r.cliente||'').toLowerCase().includes(busca);
+    return periodOk && nomeOk;
   }).sort((a,b)=>b.data-a.data);
 
   if (!filtradas.length) { el.innerHTML='<div class="empty">Nenhuma coleta registrada.</div>'; return; }
@@ -1087,7 +1089,7 @@ async function carregarRota() {
 async function excluirRota(key) {
   if (!confirm('Excluir esta coleta?')) return;
   await db.ref('rotas/'+key).remove();
-  renderRotas();
+  carregarRota();
 }
 
 // ── DRILL DOWN MATERIAL
