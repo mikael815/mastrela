@@ -1072,14 +1072,22 @@ async function carregarRota() {
     </div>
     ${filtradas.map(r=>{
       const data = new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const isAdmin = usuarioAtual && usuarioAtual.perfil === 'admin';
       return `<div class="rota-card">
         <div class="rota-header">
           <span class="rota-nome">${r.cliente}</span>
           <span class="rota-total">${fmt(r.valor)}</span>
+          ${isAdmin ? `<button class="remove-btn" onclick="excluirRota('${r.key}')" title="Excluir coleta">🗑️</button>` : ''}
         </div>
         <div class="rota-detalhe">${r.material} · ${fmtKg(r.peso)} · ${fpIcon[r.fp]||'💵'} · ${data}</div>
       </div>`;
     }).join('')}`;
+}
+
+async function excluirRota(key) {
+  if (!confirm('Excluir esta coleta?')) return;
+  await db.ref('rotas/'+key).remove();
+  renderRotas();
 }
 
 // ── DRILL DOWN MATERIAL
