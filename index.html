@@ -436,6 +436,13 @@ select:focus, input:focus { border-color: #185FA5; }
     </div>
     <div id="admin-tickets-lista"><div class="loading">Carregando...</div></div>
   </div>
+
+  <!-- Coletas -->
+  <div class="admin-section">
+    <div class="admin-section-title">🚛 Gerenciar coletas</div>
+    <input type="text" id="admin-rota-busca" placeholder="🔍 Buscar por nome do cliente..." style="margin-bottom:10px" oninput="carregarAdminColetas()">
+    <div id="admin-coletas-lista"><div class="loading">Carregando...</div></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1869,6 +1876,38 @@ function abrirAdmin() {
   goTo('screen-admin');
   carregarAdminMateriais();
   carregarAdminTickets();
+  carregarAdminColetas();
+}
+
+async function carregarAdminColetas() {
+  const el = document.getElementById('admin-coletas-lista');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Carregando...</div>';
+  const snap = await db.ref('rotas').get();
+  const todas = Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>b.data-a.data);
+  const busca = (document.getElementById('admin-rota-busca')?.value||'').toLowerCase().trim();
+  const filtradas = busca ? todas.filter(r=>(r.cliente||'').toLowerCase().includes(busca)) : todas;
+  if (!filtradas.length) { el.innerHTML='<div class="empty">Nenhuma coleta registrada.</div>'; return; }
+  const fpIcon = {dinheiro:'💵',pix:'📱',cartao:'💳'};
+  el.innerHTML = filtradas.map(r=>{
+    const data = new Date(r.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    return `<div class="ticket-admin-row">
+      <div class="ticket-admin-header">
+        <span style="font-weight:700">${r.cliente}</span>
+        <span style="color:#0F6E56;font-weight:700">${fmt(r.valor)}</span>
+      </div>
+      <div style="font-size:13px;color:#666;margin-bottom:8px">${r.material||''} · ${fmtKg(r.peso||0)} · ${fpIcon[r.fp]||'💵'} · ${data}</div>
+      <div class="ticket-admin-actions">
+        <button class="btn btn-danger btn-sm" onclick="excluirRotaAdmin('${r.key}')">🗑️ Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function excluirRotaAdmin(key) {
+  if (!confirm('Excluir esta coleta?')) return;
+  await db.ref('rotas/'+key).remove();
+  carregarAdminColetas();
 }
 function carregarAdminMateriais() {
   const el = document.getElementById('admin-mat-lista');
