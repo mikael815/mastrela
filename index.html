@@ -639,8 +639,8 @@ function popularSelectMateriais() {
 }
 
 // ── Helpers
-function fmt(v) { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
-function fmtKg(v) { return Number(v).toFixed(2).replace('.',',')+'kg'; }
+function fmt(v) { return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtKg(v) { return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})+'kg'; }
 // ── VENDAS
 function renderVendas() {
   const lista = document.getElementById('fila-lista');
